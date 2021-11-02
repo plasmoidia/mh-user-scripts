@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MH: Halloween Brew Helper
 // @namespace    https://greasyfork.org/en/users/831030-plasmoidia
-// @version      0.1
+// @version      0.2
 // @description  Convenient buttons to help you instantly brew Evil Extract.
 // @author       plasmoidia
 // @match        https://www.mousehuntgame.com/camp.php
@@ -9,13 +9,17 @@
 // @grant        none
 // ==/UserScript==
 
-function getHudElement(className, cauldronNum, dataItemType) {
+function getHudElement(className, cauldronNum, dataOther) {
     let element = undefined;
     const search = document.getElementsByClassName(className);
     for (let i = 0; i < search.length; ++i) {
-        if (search[i].attributes.getNamedItem('data-cauldron-index').value == cauldronNum) {
-            if (dataItemType !== undefined) {
-                if (search[i].attributes.getNamedItem('data-item-type').value == dataItemType) {
+        if (search[i].getAttribute('data-cauldron-index') == cauldronNum) {
+            if (dataOther !== undefined) {
+                if (search[i].getAttribute('data-item-type') == dataOther) {
+                    element = search[i];
+                    break;
+                }
+                if (search[i].getAttribute('data-queue-slot') == dataOther) {
                     element = search[i];
                     break;
                 }
@@ -38,13 +42,13 @@ function getElementFinish(cauldronNum) {
     return getHudElement('halloweenBoilingCauldronHUD-cauldron-instantFinishButton', cauldronNum);
 }
 
-function createActionButton(text, className) {
-    const btnTextSpan = document.createElement('span');
-    btnTextSpan.innerText = text;
+function createActionButton(state, className, cauldronNum) {
     const btn = document.createElement('button');
     btn.className = className;
     btn.style.cursor = 'pointer';
     btn.style.backgroundColor = 'orange';
+    btn.style.backgroundSize = 'contain';
+    btn.style.backgroundRepeat = 'no-repeat';
     btn.style.fontSize = '9px';
     btn.style.border = '1px solid #ccc';
     btn.style.borderRadius = '3px';
@@ -52,64 +56,112 @@ function createActionButton(text, className) {
     btn.style.marginLeft = '-5px';
     btn.style.marginRight = '-5px';
     btn.style.textShadow = 'none';
-    btn.style.display = 'inline-block';
-    btn.appendChild(btnTextSpan);
+    btn.style.display = 'block';
+    btn.style.width = '30px';
+    btn.style.height = '30px';
+    btn.setAttribute('data-cauldron-index', cauldronNum);
+    setBtnState(btn, state);
 
     return btn;
 }
 
-function createButtons(cauldronNum) {
-    let parent = undefined;
-    let cauldronBox = document.getElementsByClassName('halloweenBoilingCauldronHUD-cauldron');
-    for (let i = 0; i < cauldronBox.length; ++i) {
-        if (cauldronBox[i].attributes.getNamedItem('data-cauldron-index').value == cauldronNum) {
-            parent = cauldronBox[i];
-        }
+function setBtnState(btn, state) {
+    const eeImg = 'https://www.mousehuntgame.com/images/items/stats/transparent_thumb/720c74a43ad07cbc3afa674a76bf0fc4.png?cv=2';
+    const rrImg = 'https://www.mousehuntgame.com/images/items/stats/transparent_thumb/ff427767e5a41f611bfc0350bc98e184.png?cv=2';
+    if (state === 'brew') {
+        btn.setAttribute('data-cur-state', state);
+        btn.style.backgroundImage = `url(${eeImg})`;
+        btn.setAttribute('data-item-type', 'halloween_extract_stat_item');
+        btn.setAttribute('data-recipe-type', 'halloween_extract_cauldron_recipe');
     }
+    else if (state === 'finish') {
+        btn.setAttribute('data-cur-state', state);
+        btn.style.backgroundImage = `url(${rrImg})`;
+        btn.removeAttribute('data-item-type');
+        btn.removeAttribute('data-recipe-type');
+    }
+}
+
+function createButtons(cauldronNum) {
+    const spinImg = 'https://www.mousehuntgame.com/images/ui/loaders/small_spinner.gif?asset_cache_version=2';
+
+    const parent = getHudElement('halloweenBoilingCauldronHUD-cauldron', cauldronNum);
+    const queue0 = getHudElement('halloweenBoilingCauldronHUD-cauldron-queue', cauldronNum, 0);
     if (parent) {
         const container = document.createElement('div');
         container.className = 'halloweenBoilingCauldronHUD-cauldron-brewHelper plasmoidia-brewHelper';
-
-        const brewSpan = document.createElement('span');
-        brewSpan.className = 'plasmoidia-brewHelper plasmoidia-brewBtnSpan';
-        const brewBtn = createActionButton('Brew EE', 'plasmoidia-brewHelper');
-        brewSpan.appendChild(brewBtn);
+        container.style.width = '0px';
 
         const elemBrewEE = getElementCauldron(cauldronNum, 'halloween_extract_stat_item');
-        brewBtn.addEventListener('click', function() {
-            var btn = $(brewBtn);
-            btn.addClass('busy');
-            hg.views.HeadsUpDisplayHalloweenBoilingCauldronView.brewRecipe(elemBrewEE, function() {
-                btn.removeClass('busy');
-            });
-        });
-
-        const finishSpan = document.createElement('span');
-        finishSpan.className = 'plasmoidia-brewHelper plasmoidia-finishBtnSpan';
-        const finishBtn = createActionButton('Use RR', 'plasmoidia-brewHelper');
-        finishBtn.style.background = 'https://www.mousehuntgame.com/images/items/stats/transparent_thumb/ff427767e5a41f611bfc0350bc98e184.png?cv=2';
-        finishSpan.appendChild(finishBtn);
-
         const elemFinish = getElementFinish(cauldronNum);
-        finishBtn.addEventListener('click', function() {
-            hg.views.HeadsUpDisplayHalloweenBoilingCauldronView.instantFinishBrew(elemFinish);
+
+        const actionSpan = document.createElement('span');
+        actionSpan.className = 'plasmoidia-brewHelper plasmoidia-actionBtnSpan';
+        actionSpan.style.position = 'relative';
+        actionSpan.style.top = '100px';
+        actionSpan.style.left = '-10px';
+        const actionBtn = createActionButton('brew', 'plasmoida-brewHelper plasmoidia-actionBtn', cauldronNum);
+        actionSpan.appendChild(actionBtn);
+
+        actionBtn.addEventListener('click', function() {
+            const curState = actionBtn.getAttribute('data-cur-state');
+            if (curState === 'brew') {
+                actionBtn.style.backgroundImage = `url(${spinImg})`;
+                hg.views.HeadsUpDisplayHalloweenBoilingCauldronView.brewRecipe(elemBrewEE, function() {
+                    setBtnState(actionBtn, 'finish');
+                });
+            }
+            else if (curState === 'finish') {
+                actionBtn.style.backgroundImage = `url(${spinImg})`;
+                hg.views.HeadsUpDisplayHalloweenBoilingCauldronView.instantFinishBrew(elemFinish);
+            }
+            else {
+                console.log(`BrewHelper: Error: Button state unknown: ${curState}`);
+            }
         });
 
-        container.appendChild(brewSpan);
-        container.appendChild(finishSpan);
+        container.appendChild(actionSpan);
+        parent.insertBefore(container, queue0);
+        queue0.style.marginTop = '10px';
+    }
+}
 
-        parent.appendChild(container);
+function updateButton(cauldronNum) {
+    const actionBtn = getHudElement('plasmoidia-actionBtn', cauldronNum);
+    const cauldron = getHudElement('halloweenBoilingCauldronHUD-cauldron', cauldronNum);
+    if (actionBtn && cauldron) {
+        if (cauldron.classList.contains('active')) {
+            setBtnState(actionBtn, 'finish');
+        }
+        else {
+            setBtnState(actionBtn, 'brew');
+        }
+    }
+    else {
+        if (actionBtn) {
+            console.log('BrewHelper: Error: Could not find cauldron');
+        }
+        else {
+            console.log('BrewHelper: Error: Could not find btn');
+        }
     }
 }
 
 function renderBrewHelper() {
     'use strict';
 
-    let brewHelpers = document.querySelectorAll('.plasmoidia-brewHelper');
+    const halloweenHUD = document.getElementsByClassName('halloweenBoilingCauldronHUD');
+    if (halloweenHUD.length === 0) {
+        return; // must not be Halloween
+    }
+
+    const brewHelpers = document.querySelectorAll('.plasmoidia-brewHelper');
     if (brewHelpers.length === 0) {
         createButtons(0);
         createButtons(1);
     }
+    updateButton(0);
+    updateButton(1);
 }
 
 $(document).ajaxStop(renderBrewHelper)
