@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MH: Halloween Brew Helper
 // @namespace    https://greasyfork.org/en/users/831030-plasmoidia
-// @version      0.2
+// @version      0.3
 // @description  Convenient buttons to help you instantly brew Evil Extract.
 // @author       plasmoidia
 // @match        https://www.mousehuntgame.com/camp.php
@@ -53,8 +53,8 @@ function createActionButton(state, className, cauldronNum) {
     btn.style.border = '1px solid #ccc';
     btn.style.borderRadius = '3px';
     btn.style.padding = '1px 5px';
-    btn.style.marginLeft = '-5px';
-    btn.style.marginRight = '-5px';
+    btn.style.marginLeft = '-15px';
+    btn.style.marginRight = '-15px';
     btn.style.textShadow = 'none';
     btn.style.display = 'block';
     btn.style.width = '30px';
@@ -99,7 +99,7 @@ function createButtons(cauldronNum) {
         actionSpan.className = 'plasmoidia-brewHelper plasmoidia-actionBtnSpan';
         actionSpan.style.position = 'relative';
         actionSpan.style.top = '100px';
-        actionSpan.style.left = '-10px';
+        actionSpan.style.left = '0px';
         const actionBtn = createActionButton('brew', 'plasmoida-brewHelper plasmoidia-actionBtn', cauldronNum);
         actionSpan.appendChild(actionBtn);
 
@@ -147,6 +147,71 @@ function updateButton(cauldronNum) {
     }
 }
 
+function createCancelBtn(cauldronNum, queueSlot) {
+    const cancelBtn = document.createElement('a');
+    cancelBtn.href = '#';
+    cancelBtn.className = 'halloweenBoilingCauldronRecipeView-cauldron-queueSlot-cancelButton plasmoida-brewHelper plasmoidia-cancelBtn';
+    cancelBtn.onclick = function() { hg.views.HeadsUpDisplayHalloweenBoilingCauldronView.removeFromQueue(this); return false; };
+    cancelBtn.setAttribute('data-queue-slot', queueSlot);
+    cancelBtn.setAttribute('data-cauldron-index', cauldronNum);
+    cancelBtn.style.top = '-20px';
+    cancelBtn.style.left = '33%';
+
+    return cancelBtn;
+}
+
+function createQueueBtn(cauldronNum, queueSlot) {
+    const spinImg = 'https://www.mousehuntgame.com/images/ui/loaders/small_spinner.gif?asset_cache_version=2';
+
+    const queueBtn = createActionButton('brew', 'plasmoida-brewHelper plasmoidia-queueBtn', cauldronNum);
+    queueBtn.style.position = 'absolute';
+    queueBtn.style.top = '35px';
+    queueBtn.style.left = '31px';
+    queueBtn.style.marginTop = '-15px';
+    queueBtn.setAttribute('data-queue-slot', queueSlot);
+    queueBtn.addEventListener('click', function() {
+        queueBtn.style.backgroundImage = `url(${spinImg})`;
+        hg.views.HeadsUpDisplayHalloweenBoilingCauldronView.brewRecipe(queueBtn);
+        return false;
+    });
+
+    return queueBtn;
+}
+
+function removeBrewHelperElems() {
+    document.querySelectorAll('.plasmoidia-cancelBtn').forEach(el => el.remove());
+    document.querySelectorAll('.plasmoidia-queueBtn').forEach(el => el.remove());
+}
+
+function updateQueueOrCancelButtons(cauldronNum) {
+    const cauldron = getHudElement('halloweenBoilingCauldronHUD-cauldron', cauldronNum);
+    if (cauldron.classList.contains('active')) {
+        const queue0 = getHudElement('halloweenBoilingCauldronHUD-cauldron-queue', cauldronNum, 0);
+        let q0Btn = undefined;
+        if (queue0.classList.contains('active')) {
+            q0Btn = createCancelBtn(cauldronNum, 0);
+        }
+        else {
+            q0Btn = createQueueBtn(cauldronNum, 0);
+        }
+        queue0.appendChild(q0Btn);
+        queue0.style.transform = 'none';
+
+        if (queue0.classList.contains('active')) {
+            const queue1 = getHudElement('halloweenBoilingCauldronHUD-cauldron-queue', cauldronNum, 1);
+            let q1Btn = undefined;
+            if (queue1.classList.contains('active')) {
+                q1Btn = createCancelBtn(cauldronNum, 0);
+            }
+            else {
+                q1Btn = createQueueBtn(cauldronNum, 0);
+            }
+            queue1.appendChild(q1Btn);
+            queue1.style.transform = 'none';
+        }
+    }
+}
+
 function renderBrewHelper() {
     'use strict';
 
@@ -162,6 +227,10 @@ function renderBrewHelper() {
     }
     updateButton(0);
     updateButton(1);
+
+    removeBrewHelperElems();
+    updateQueueOrCancelButtons(0);
+    updateQueueOrCancelButtons(1);
 }
 
 $(document).ajaxStop(renderBrewHelper)
