@@ -201,10 +201,10 @@ function updateQueueOrCancelButtons(cauldronNum) {
             const queue1 = getHudElement('halloweenBoilingCauldronHUD-cauldron-queue', cauldronNum, 1);
             let q1Btn = undefined;
             if (queue1.classList.contains('active')) {
-                q1Btn = createCancelBtn(cauldronNum, 0);
+                q1Btn = createCancelBtn(cauldronNum, 1);
             }
             else {
-                q1Btn = createQueueBtn(cauldronNum, 0);
+                q1Btn = createQueueBtn(cauldronNum, 1);
             }
             queue1.appendChild(q1Btn);
             queue1.style.transform = 'none';
