@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MH: Halloween Brew Helper
 // @namespace    https://greasyfork.org/en/users/831030-plasmoidia
-// @version      0.4
+// @version      0.5
 // @description  Convenient buttons to help you instantly brew Evil Extract.
 // @author       plasmoidia
 // @match        https://www.mousehuntgame.com/*
