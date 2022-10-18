@@ -1,0 +1,1 @@
+This script will add some buttons to the main HUD in the Gloomy Greenwood during the MouseHunt Halloween event.
