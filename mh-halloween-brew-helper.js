@@ -7,6 +7,7 @@
 // @match        https://www.mousehuntgame.com/*
 // @icon         https://www.google.com/s2/favicons?domain=mousehuntgame.com
 // @grant        none
+// @run-at       document-end
 // ==/UserScript==
 
 function getHudElement(className, cauldronNum, dataOther) {
